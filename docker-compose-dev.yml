@@ -1,0 +1,53 @@
+version: '3.9'
+
+# Development compose: only spins up MySQL + Redis
+# Run the Spring Boot app locally with: mvn spring-boot:run
+
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: zomato-mysql-dev
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: zomato_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data-dev:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - zomato-dev-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: zomato-redis-dev
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data-dev:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - zomato-dev-network
+
+volumes:
+  mysql-data-dev:
+    driver: local
+  redis-data-dev:
+    driver: local
+
+networks:
+  zomato-dev-network:
+    driver: bridge

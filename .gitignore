@@ -1,0 +1,40 @@
+# ===== Build output =====
+target/
+*.class
+*.jar
+*.war
+
+# ===== Maven =====
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ===== IDE =====
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+
+# ===== Env / Secrets =====
+.env
+.env.local
+application-secrets.yml
+
+# ===== Logs =====
+*.log
+logs/
+
+# ===== Docker volumes =====
+mysql-data/
+redis-data/
+
+# ===== OS =====
+Thumbs.db
+Desktop.ini
