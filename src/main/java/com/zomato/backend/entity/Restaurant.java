@@ -8,16 +8,16 @@ import java.math.BigDecimal;
 
 /**
  * Represents a restaurant registered on the platform.
- *
+ * <p>
  * Lifecycle:
  *  - Owner registers → isActive=false, isOpen=false
- *  - Admin approves  → isActive=true
- *  - Owner toggles   → isOpen=true/false  (daily open/close)
- *
+ *  - Admin approves → isActive=true
+ *  - Owner toggles → isOpen=true/false (daily open/close)
+ * <p>
  * Rating fields (avgRating, totalRatings) are updated in ReviewService
- * every time a new review is submitted — kept denormalized here
+ * every time a new review is submitted — kept denormalized here,
  * so the restaurant listing API doesn't need an aggregate query.
- *
+ * <p>
  * Audit timestamps (createdAt, updatedAt) inherited from {@link BaseEntity}.
  */
 @Entity
@@ -75,7 +75,7 @@ public class Restaurant extends BaseEntity {
     /**
      * Running average rating (1.0 – 5.0).
      * Recalculated in ReviewService.updateRestaurantAvgRating().
-     * precision=3, scale=2 → stores values like 4.35
+     * Precision=3, scale=2 → stores values like 4.35
      */
     @Column(name = "avg_rating",
             nullable = false,
@@ -96,8 +96,8 @@ public class Restaurant extends BaseEntity {
 
     /**
      * Admin-controlled flag.
-     * false = pending approval or banned.
-     * true  = visible to customers.
+     * False = pending approval or banned.
+     * True = visible to customers.
      */
     @Column(name = "is_active", nullable = false)
     @Builder.Default
@@ -105,7 +105,7 @@ public class Restaurant extends BaseEntity {
 
     /**
      * Owner-controlled flag — toggled daily to indicate open/closed.
-     * Only meaningful when isActive = true.
+     * Only meaningful when it isActive = true.
      */
     @Column(name = "is_open", nullable = false)
     @Builder.Default
@@ -115,7 +115,7 @@ public class Restaurant extends BaseEntity {
 
     /**
      * The user who owns this restaurant (must have RESTAURANT_OWNER role).
-     *
+     * <p>
      * FetchType.LAZY — don't load the full User object unless explicitly needed.
      * RESTRICT on delete — cannot delete a user who owns restaurants
      * (must transfer or delete restaurants first).
@@ -128,5 +128,18 @@ public class Restaurant extends BaseEntity {
     )
     private User owner;
 
-    // Address will be added in Step 2.2 as @OneToOne with Address entity
+    /**
+     * Physical address of this restaurant.
+     *
+     * CascadeType.ALL — creating/updating/deleting the restaurant
+     * automatically propagates to the address row.
+     *
+     * address_id FK column lives on the restaurants table.
+     */
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @JoinColumn(
+        name = "address_id",
+        foreignKey = @ForeignKey(name = "fk_restaurant_address")
+    )
+    private Address address;
 }
