@@ -43,7 +43,7 @@ public class RestaurantService {
 
     /**
      * Registers a new restaurant under the authenticated owner.
-     *
+     * <p>
      * New restaurants start with isActive=false (pending admin approval)
      * and isOpen=false. Ratings default to 0.
      *
@@ -300,4 +300,39 @@ public class RestaurantService {
         return restaurantRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Restaurant", "id", id));
     }
+
+    // ── Admin Operations ──────────────────────────────────────────────────────
+
+    /**
+     * Approves a restaurant — sets isActive=true so it appears in public listings.
+     * Admin-only. Also evicts any stale cache entry.
+     *
+     * @param id restaurant ID to approve
+     * @return updated RestaurantResponse
+     */
+    @CacheEvict(value = "restaurants", key = "#id")
+    @Transactional
+    public RestaurantResponse approveRestaurant(Long id) {
+        Restaurant restaurant = findRestaurantById(id);
+        restaurant.setIsActive(true);
+        Restaurant saved = restaurantRepository.save(restaurant);
+        log.info("Restaurant approved by admin: id={}", id);
+        return restaurantMapper.toRestaurantResponse(saved);
+    }
+
+    /**
+     * Returns all restaurants for admin review — active and inactive.
+     *
+     * @param isActive filter: true=live, false=pending approval, null=all
+     */
+    @Transactional(readOnly = true)
+    public Page<RestaurantResponse> getRestaurantsForAdmin(Boolean isActive, int page, int size) {
+        size = Math.min(size, 50);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Page<Restaurant> results = (isActive != null)
+                ? restaurantRepository.findByIsActive(isActive, pageable)
+                : restaurantRepository.findAll(pageable);
+        return results.map(restaurantMapper::toRestaurantResponse);
+    }
 }
+

@@ -5,15 +5,15 @@ import lombok.*;
 
 /**
  * Represents a physical address linked to a restaurant.
- *
+ * <p>
  * Designed as a standalone entity (not @Embeddable) so it can
  * be reused as a snapshot in Order delivery addresses later.
- *
+ * <p>
  * Coordinates (latitude, longitude) enable:
  *  - Distance-based restaurant sorting (future)
  *  - Delivery partner assignment (Phase 6)
  *  - Map integrations
- *
+ * <p>
  * Note: {@link com.zomato.backend.entity.UserAddress} (Phase 8) is
  * a separate entity for users' saved delivery addresses.
  */

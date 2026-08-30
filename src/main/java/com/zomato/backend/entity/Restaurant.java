@@ -130,11 +130,11 @@ public class Restaurant extends BaseEntity {
 
     /**
      * Physical address of this restaurant.
-     *
+     * <p>
      * CascadeType.ALL — creating/updating/deleting the restaurant
      * automatically propagates to the address row.
-     *
-     * address_id FK column lives on the restaurants table.
+     * <p>
+     * Address_id FK column lives on the restaurant table.
      */
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JoinColumn(

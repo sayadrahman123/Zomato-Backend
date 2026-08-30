@@ -7,13 +7,13 @@ import org.springframework.util.StringUtils;
 
 /**
  * Utility for extracting authenticated user info from the current request.
- *
+ * <p>
  * Why not @AuthenticationPrincipal UserDetails?
  *   UserDetails only gives us the email (username). To get the userId
  *   we'd need an extra DB call on every request. Since we embedded
  *   "uid" in the JWT claims, we can read it directly from the token
  *   with zero DB overhead.
- *
+ * <p>
  * Usage in any controller method:
  * <pre>
  *   Long userId = authUtils.getCurrentUserId(request);

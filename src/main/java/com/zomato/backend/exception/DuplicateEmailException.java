@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 /**
  * Thrown during registration when the provided email is already
  * associated with an existing account.
- *
+ * <p>
  * Maps to HTTP 409 Conflict.
  */
 @ResponseStatus(HttpStatus.CONFLICT)

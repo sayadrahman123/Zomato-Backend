@@ -17,10 +17,10 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * Manages the authenticated user's own profile.
- *
+ * <p>
  * All endpoints require a valid JWT — enforced by SecurityConfig.
  * The userId is extracted from the token, never trusted from the request body.
- *
+ * <p>
  * Base path: /api/users
  */
 @RestController

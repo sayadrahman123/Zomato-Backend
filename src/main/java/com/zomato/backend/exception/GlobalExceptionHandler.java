@@ -28,15 +28,15 @@ import java.util.Map;
  * regardless of what went wrong.
  *
  * Handler priority (top = most specific, bottom = most general):
- *   1. Validation errors     (400)  ← MethodArgumentNotValidException
- *   2. Business exceptions   (400)  ← BusinessException
- *   3. Conflict exceptions   (409)  ← DuplicateEmailException, DuplicatePhoneException
- *   4. Not found             (404)  ← ResourceNotFoundException
- *   5. Auth exceptions       (401)  ← BadCredentialsException, AuthenticationException
- *   6. Access denied         (403)  ← AccessDeniedException
- *   7. Method not allowed    (405)  ← HttpRequestMethodNotSupportedException
- *   8. No resource found     (404)  ← NoResourceFoundException (wrong URL)
- *   9. Catch-all             (500)  ← Exception
+ *   1. Validation errors (400) ← MethodArgumentNotValidException
+ *   2. Business exceptions (400) ← BusinessException
+ *   3. Conflict exceptions (409) ← DuplicateEmailException, DuplicatePhoneException
+ *   4. Not found (404) ← ResourceNotFoundException
+ *   5. Auth exceptions (401) ← BadCredentialsException, AuthenticationException
+ *   6. Access denied (403) ← AccessDeniedException
+ *   7. Method isn't allowed (405) ← HttpRequestMethodNotSupportedException
+ *   8. No resource found (404) ← NoResourceFoundException (wrong URL)
+ *   9. Catch-all (500) ← Exception
  */
 @Slf4j
 @RestControllerAdvice
@@ -46,10 +46,10 @@ public class GlobalExceptionHandler {
 
     /**
      * Handles @Valid failures on @RequestBody parameters.
-     *
+     * <p>
      * Returns a map of { fieldName: errorMessage } in the data field
      * so the client knows exactly which fields failed and why.
-     *
+     * <p>
      * Example response:
      * <pre>
      * {
@@ -193,7 +193,7 @@ public class GlobalExceptionHandler {
 
     /**
      * Last-resort handler for any unexpected exception.
-     *
+     * <p>
      * Logs the full stack trace internally but returns a generic message
      * to the client — never expose internal details (stack traces, DB errors)
      * to end users.

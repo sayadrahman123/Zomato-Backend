@@ -13,11 +13,11 @@ import java.util.Optional;
 
 /**
  * Repository for {@link Restaurant} entity.
- *
+ * <p>
  * Query strategy:
- *  - Simple filters     → Spring Data method names (no SQL)
- *  - Complex search     → @Query JPQL (database-agnostic)
- *  - Ownership checks   → existsBy... (SELECT 1, fastest)
+ *  - Simple filters → Spring Data method names (no SQL)
+ *  - Complex search → @Query JPQL (database-agnostic)
+ *  - Ownership checks → existsBy... (SELECT 1, fastest)
  */
 @Repository
 public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
@@ -53,14 +53,14 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
 
     /**
      * All active AND currently open restaurants in a city.
-     * Used for "open now" filter on the listing page.
+     * Used for the "open now" filter on the listing page.
      */
     Page<Restaurant> findByCityIgnoreCaseAndIsActiveTrueAndIsOpenTrue(
             String city, Pageable pageable
     );
 
     /**
-     * All active restaurants of a specific cuisine in a city.
+     * All active restaurants of specific cuisine in a city.
      * Used for cuisine-type filter (e.g., "Show only Biryani restaurants in Bangalore").
      */
     Page<Restaurant> findByCityIgnoreCaseAndCuisineTypeAndIsActiveTrue(
@@ -71,10 +71,10 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
 
     /**
      * Full-text search across restaurant name and city.
-     *
+     * <p>
      * JPQL LIKE search — case-insensitive, matches partial words.
      * Only returns active (admin-approved) restaurants.
-     *
+     * <p>
      * Example: q="pizza", city="Mumbai"
      * → returns all restaurants in Mumbai whose name contains "pizza"
      *

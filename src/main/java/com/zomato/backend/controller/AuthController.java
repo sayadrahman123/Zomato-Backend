@@ -21,10 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Handles user registration and login.
- *
+ * <p>
  * Both endpoints are PUBLIC (no JWT required) —
  * configured in {@link com.zomato.backend.config.SecurityConfig}.
- *
+ * <p>
  * Base path: /api/auth
  */
 @RestController

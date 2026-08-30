@@ -22,11 +22,11 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * Handles all restaurant operations.
- *
+ * <p>
  * Access rules:
  *  - GET  endpoints → public (no token required for browse/search)
  *  - POST / PUT / DELETE / PATCH → RESTAURANT_OWNER only
- *
+ * <p>
  * Base path: /api/restaurants
  */
 @RestController
@@ -200,4 +200,38 @@ public class RestaurantController {
         restaurantService.deleteRestaurant(id, ownerId);
         return ResponseEntity.ok(ApiResponse.success("Restaurant deactivated successfully"));
     }
+    // ── Admin Endpoints ───────────────────────────────────────────────────────
+
+    @Operation(
+        summary     = "Admin: list all restaurants",
+        description = "Returns all restaurants with optional isActive filter. " +
+                      "isActive=false → pending approval queue."
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin")
+    public ResponseEntity<ApiResponse<Page<RestaurantResponse>>> getRestaurantsForAdmin(
+            @RequestParam(required = false) Boolean isActive,
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Page<RestaurantResponse> results =
+                restaurantService.getRestaurantsForAdmin(isActive, page, size);
+        return ResponseEntity.ok(ApiResponse.success("Admin: restaurants fetched", results));
+    }
+
+    @Operation(
+        summary     = "Admin: approve a restaurant",
+        description = "Sets isActive=true so the restaurant appears in public listings."
+    )
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/{id}/approve")
+    public ResponseEntity<ApiResponse<RestaurantResponse>> approveRestaurant(
+            @PathVariable Long id
+    ) {
+        RestaurantResponse response = restaurantService.approveRestaurant(id);
+        return ResponseEntity.ok(ApiResponse.success("Restaurant approved and now live", response));
+    }
 }
+

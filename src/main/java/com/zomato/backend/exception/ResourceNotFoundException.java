@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 /**
  * Thrown when a requested resource (user, restaurant, order, etc.)
  * cannot be found in the database.
- *
+ * <p>
  * Maps to HTTP 404 Not Found.
  */
 @ResponseStatus(HttpStatus.NOT_FOUND)

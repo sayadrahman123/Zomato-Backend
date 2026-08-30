@@ -18,7 +18,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * Handles authenticated user profile operations.
- *
+ * <p>
  * All methods receive the userId extracted from the JWT
  * by the controller — no userId is trusted from the request body.
  */
@@ -38,7 +38,7 @@ public class UserService {
      *
      * @param userId JWT-extracted user ID
      * @return safe UserResponse (no passwordHash)
-     * @throws ResourceNotFoundException if user not found (edge case)
+     * @throws ResourceNotFoundException if the user isn't found (edge case)
      */
     @Transactional(readOnly = true)
     public UserResponse getProfile(Long userId) {
@@ -50,7 +50,7 @@ public class UserService {
 
     /**
      * Updates name and/or phone of the authenticated user.
-     *
+     * <p>
      * Only non-null, non-blank fields in the request are applied —
      * so a client can send just { "name": "new name" } without
      * touching the phone, and vice versa.
@@ -58,7 +58,7 @@ public class UserService {
      * @param userId  JWT-extracted user ID
      * @param request partial update payload
      * @return updated UserResponse
-     * @throws DuplicatePhoneException if the new phone is already taken by another user
+     * @throws DuplicatePhoneException if another user already takes the new phone
      */
     @Transactional
     public UserResponse updateProfile(Long userId, UpdateProfileRequest request) {
@@ -97,14 +97,14 @@ public class UserService {
 
     /**
      * Changes the password of the authenticated user.
-     *
+     * <p>
      * Validations (in order):
-     *  1. currentPassword must match the stored BCrypt hash
-     *  2. newPassword must not be the same as currentPassword
+     *  1. The currentPassword must match the stored BCrypt hash
+     *  2. The newPassword must not be the same as the currentPassword
      *  3. newPassword and confirmPassword must match
      *
      * @param userId  JWT-extracted user ID
-     * @param request contains currentPassword, newPassword, confirmPassword
+     * @param request contains the currentPassword, newPassword, confirmPassword
      * @throws BusinessException if any validation fails
      */
     @Transactional
