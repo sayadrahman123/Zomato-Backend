@@ -1,5 +1,6 @@
 package com.zomato.backend.dto.request;
 
+import com.zomato.backend.entity.enums.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -33,5 +34,14 @@ public record RegisterRequest(
 
         @NotBlank(message = "Password is required")
         @Size(min = 8, max = 100, message = "Password must be at least 8 characters")
-        String password
+        String password,
+
+        /**
+         * Optional — defaults to CUSTOMER if not provided.
+         * Only CUSTOMER and RESTAURANT_OWNER are self-assignable.
+         * ADMIN must be assigned by an existing admin.
+         *
+         * Example body: { "role": "RESTAURANT_OWNER" }
+         */
+        UserRole role       // validated in AuthService, not here
 ) {}

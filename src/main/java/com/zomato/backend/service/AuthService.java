@@ -20,16 +20,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Handles user registration and authentication.
- *
- * register() flow:
- *   1. Check email uniqueness          → 409 if taken
- *   2. Check phone uniqueness          → 409 if taken
+ * <p>
+ * Register() flow:
+ *   1. Check email uniqueness → 409 if taken
+ *   2. Check phone uniqueness → 409 if taken
  *   3. Hash the password (BCrypt 12)
- *   4. Persist the User entity
+ *   4. Persist User entity
  *   5. Generate JWT
- *   6. Return AuthResponse (token + user info)
- *
- * login() flow:
+ *   6. Return AuthResponse (token and user info)
+ * <p>
+ * Login() flow:
  *   1. Delegate to AuthenticationManager.authenticate()
  *      → internally calls UserDetailsServiceImpl.loadUserByUsername()
  *      → verifies BCrypt password hash
@@ -56,7 +56,7 @@ public class AuthService {
      * @param request validated registration payload
      * @return JWT token + user details
      * @throws DuplicateEmailException if email is already registered
-     * @throws DuplicatePhoneException if phone is already registered
+     * @throws DuplicatePhoneException if the phone is already registered
      */
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -72,12 +72,17 @@ public class AuthService {
         }
 
         // ── 2. Build and persist user ─────────────────────────────────────────
+        // Determine role — default to CUSTOMER; block self-assignment of ADMIN
+        UserRole role = (request.role() != null && request.role() != UserRole.ADMIN)
+                ? request.role()
+                : UserRole.CUSTOMER;
+
         User user = User.builder()
                 .name(request.name())
                 .email(request.email().toLowerCase().trim())
                 .phone(request.phone())
                 .passwordHash(passwordEncoder.encode(request.password()))
-                .role(UserRole.CUSTOMER)   // all self-registrations are CUSTOMER
+                .role(role)
                 .isActive(true)
                 .build();
 
@@ -105,11 +110,11 @@ public class AuthService {
 
     /**
      * Authenticates a user and returns a fresh JWT.
-     *
+     * <p>
      * Delegates the heavy lifting (password check, account status) to
      * Spring Security's AuthenticationManager. If authentication fails,
      * Spring Security throws BadCredentialsException or
-     * DisabledException automatically — no manual password comparison needed.
+     * DisabledException automatically — no manual password comparison is needed.
      *
      * @param request validated login payload
      * @return fresh JWT token + user details

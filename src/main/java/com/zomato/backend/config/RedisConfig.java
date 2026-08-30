@@ -53,14 +53,14 @@ public class RedisConfig {
     /**
      * Dedicated ObjectMapper for Redis serialization.
      *
-     * Why a separate ObjectMapper (not the app-wide one)?
-     * We need activateDefaultTyping() for Redis — it embeds type info
-     * in the JSON so GenericJackson2JsonRedisSerializer can reconstruct
-     * the correct class on deserialization. This behaviour is NOT wanted
-     * for the HTTP response ObjectMapper.
+     * NOT exposed as a @Bean — keeps it out of Spring MVC's Jackson
+     * auto-configuration so HTTP responses don't get "@class" fields.
+     *
+     * activateDefaultTyping embeds class type info in the JSON so
+     * GenericJackson2JsonRedisSerializer can reconstruct the correct
+     * class on deserialization. This is desirable for Redis but not HTTP.
      */
-    @Bean(name = "redisObjectMapper")
-    public ObjectMapper redisObjectMapper() {
+    private ObjectMapper buildRedisObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -90,7 +90,7 @@ public class RedisConfig {
         template.setConnectionFactory(connectionFactory);
 
         GenericJackson2JsonRedisSerializer jsonSerializer =
-                new GenericJackson2JsonRedisSerializer(redisObjectMapper());
+                new GenericJackson2JsonRedisSerializer(buildRedisObjectMapper());
         StringRedisSerializer stringSerializer = new StringRedisSerializer();
 
         template.setKeySerializer(stringSerializer);
@@ -113,7 +113,7 @@ public class RedisConfig {
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
         GenericJackson2JsonRedisSerializer jsonSerializer =
-                new GenericJackson2JsonRedisSerializer(redisObjectMapper());
+                new GenericJackson2JsonRedisSerializer(buildRedisObjectMapper());
 
         // Base configuration shared by all caches
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
