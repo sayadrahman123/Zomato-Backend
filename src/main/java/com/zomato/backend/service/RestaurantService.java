@@ -15,6 +15,8 @@ import com.zomato.backend.repository.RestaurantRepository;
 import com.zomato.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -79,12 +81,14 @@ public class RestaurantService {
      * Fetches a single restaurant by ID.
      * Visible to everyone (customers, owner, admin).
      *
-     * NOTE: @Cacheable is added in Step 2.6.
+     * Cached in Redis under key "restaurants::{id}" for 10 minutes.
+     * Cache is evicted automatically on update, toggle, or delete.
      *
      * @param id the restaurant ID
      * @return full RestaurantResponse
      * @throws ResourceNotFoundException if not found
      */
+    @Cacheable(value = "restaurants", key = "#id")
     @Transactional(readOnly = true)
     public RestaurantResponse getRestaurantById(Long id) {
         Restaurant restaurant = findRestaurantById(id);
@@ -187,6 +191,7 @@ public class RestaurantService {
      * @throws BusinessException         if the caller does not own this restaurant
      * @throws ResourceNotFoundException if restaurant not found
      */
+    @CacheEvict(value = "restaurants", key = "#id")
     @Transactional
     public RestaurantResponse updateRestaurant(
             Long id, UpdateRestaurantRequest request, Long ownerId
@@ -229,6 +234,7 @@ public class RestaurantService {
      * @return updated RestaurantResponse
      * @throws BusinessException if the restaurant is not yet approved
      */
+    @CacheEvict(value = "restaurants", key = "#id")
     @Transactional
     public RestaurantResponse toggleOpen(Long id, Long ownerId) {
         Restaurant restaurant = getRestaurantOwnedBy(id, ownerId);
@@ -259,6 +265,7 @@ public class RestaurantService {
      * @param id      restaurant ID
      * @param ownerId JWT-extracted owner ID
      */
+    @CacheEvict(value = "restaurants", key = "#id")
     @Transactional
     public void deleteRestaurant(Long id, Long ownerId) {
         Restaurant restaurant = getRestaurantOwnedBy(id, ownerId);
