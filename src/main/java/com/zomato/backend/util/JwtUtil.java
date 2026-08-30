@@ -6,6 +6,7 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -35,6 +36,12 @@ import java.util.function.Function;
 public class JwtUtil {
 
     private final SecretKey signingKey;
+    /**
+     * -- GETTER --
+     *  Returns the configured token lifetime in milliseconds.
+     *  Used by AuthResponse so the client knows when to refresh.
+     */
+    @Getter
     private final long expirationMs;
 
     public JwtUtil(AppProperties appProperties) {
@@ -98,14 +105,6 @@ public class JwtUtil {
      */
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
-    }
-
-    /**
-     * Returns the configured token lifetime in milliseconds.
-     * Used by AuthResponse so the client knows when to refresh.
-     */
-    public long getExpirationMs() {
-        return expirationMs;
     }
 
     // ── Token Validation ──────────────────────────────────────────────────────

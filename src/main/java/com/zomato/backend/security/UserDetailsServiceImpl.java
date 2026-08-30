@@ -1,5 +1,6 @@
 package com.zomato.backend.security;
 
+import com.zomato.backend.config.SecurityConfig;
 import com.zomato.backend.entity.User;
 import com.zomato.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,11 +17,11 @@ import java.util.List;
 /**
  * Spring Security hook — called by the authentication framework
  * whenever it needs to load a user by their email address.
- *
+ * <p>
  * Used in two places:
  *  1. {@link JwtAuthFilter} — to validate the JWT against the real DB record
  *  2. {@link SecurityConfig} — wired into the AuthenticationProvider
- *
+ * <p>
  * Why findByEmailAndIsActiveTrue?
  *   Banned users are rejected here at the DB level, before any
  *   password or token check. They receive UsernameNotFoundException

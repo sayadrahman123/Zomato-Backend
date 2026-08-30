@@ -22,7 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 /**
  * Central Spring Security configuration.
- *
+ * <p>
  * Key design choices:
  * - STATELESS session: no HttpSession created (JWT is the session)
  * - CSRF disabled: safe for stateless REST APIs using JWT
