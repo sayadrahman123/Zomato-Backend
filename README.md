@@ -35,7 +35,7 @@
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/YOUR_USERNAME/Zomato-Backend.git
+git clone https://github.com/sayadrahman123/Zomato-Backend.git
 cd Zomato-Backend
 ```
 
