@@ -19,8 +19,6 @@ import com.zomato.backend.repository.MenuItemRepository;
 import com.zomato.backend.repository.RestaurantRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -29,15 +27,17 @@ import java.util.List;
 
 /**
  * Handles all menu operations — categories and items.
- *
+ * <p>
  * Ownership guard:
  *   Every write operation first checks that the authenticated owner
  *   actually owns the target restaurant (via existsByIdAndOwnerId).
- *
- * Caching:
- *   The full menu (getFullMenu) is cached under the "menus" cache key.
- *   Any category/item mutation evicts the menu cache for that restaurant
- *   so the next GET re-builds it from the database.
+ * <p>
+ * Caching (industry-grade):
+ *   The full menu (getFullMenu) is served via MenuCacheService which provides:
+ *   - Redis-backed distributed lock to prevent cache stampede
+ *   - Double-checked locking after lock acquisition
+ *   - Automatic fallback to DB if Redis is down (graceful degradation)
+ *   - Explicit cache eviction on every write mutation
  */
 @Slf4j
 @Service
@@ -48,6 +48,7 @@ public class MenuService {
     private final MenuItemRepository     itemRepository;
     private final RestaurantRepository   restaurantRepository;
     private final MenuMapper             menuMapper;
+    private final MenuCacheService       menuCacheService;
 
     // ══════════════════════════════════════════════════════════════════════════
     // CATEGORY OPERATIONS
@@ -65,7 +66,6 @@ public class MenuService {
      * @throws BusinessException if caller doesn't own the restaurant
      * @throws BusinessException if a category with the same name already exists
      */
-    @CacheEvict(value = "menus", key = "#restaurantId")
     @Transactional
     public MenuCategoryResponse createCategory(
             CreateMenuCategoryRequest request,
@@ -90,6 +90,7 @@ public class MenuService {
                 .build();
 
         MenuCategory saved = categoryRepository.save(category);
+        menuCacheService.evict(restaurantId);
         log.info("Category created: id={}, name='{}', restaurantId={}", saved.getId(), saved.getName(), restaurantId);
         return menuMapper.toCategoryResponse(saved);
     }
@@ -100,7 +101,6 @@ public class MenuService {
      * Partially updates a menu category.
      * Only non-null fields in the request are applied.
      */
-    @CacheEvict(value = "menus", key = "#restaurantId")
     @Transactional
     public MenuCategoryResponse updateCategory(
             Long categoryId,
@@ -127,6 +127,7 @@ public class MenuService {
         if (request.isActive()     != null) category.setIsActive(request.isActive());
 
         MenuCategory updated = categoryRepository.save(category);
+        menuCacheService.evict(restaurantId);
         return menuMapper.toCategoryResponse(updated);
     }
 
@@ -136,13 +137,13 @@ public class MenuService {
      * Soft-deletes a category by setting isActive=false.
      * All items in this category remain in the database (preserves history).
      */
-    @CacheEvict(value = "menus", key = "#restaurantId")
     @Transactional
     public void deleteCategory(Long categoryId, Long restaurantId, Long ownerId) {
         getRestaurantOwnedBy(restaurantId, ownerId);
         MenuCategory category = getCategoryBelongingToRestaurant(categoryId, restaurantId);
         category.setIsActive(false);
         categoryRepository.save(category);
+        menuCacheService.evict(restaurantId);
         log.info("Category soft-deleted: id={}, restaurantId={}", categoryId, restaurantId);
     }
 
@@ -174,7 +175,6 @@ public class MenuService {
      * @throws BusinessException if discountedPrice >= price
      * @throws BusinessException if item name already exists in the category
      */
-    @CacheEvict(value = "menus", key = "#restaurantId")
     @Transactional
     public MenuItemResponse createItem(
             CreateMenuItemRequest request,
@@ -212,6 +212,7 @@ public class MenuService {
                 .build();
 
         MenuItem saved = itemRepository.save(item);
+        menuCacheService.evict(restaurantId);
         log.info("MenuItem created: id={}, name='{}', restaurantId={}", saved.getId(), saved.getName(), restaurantId);
         return menuMapper.toItemResponse(saved);
     }
@@ -220,13 +221,12 @@ public class MenuService {
 
     /**
      * Partially updates a menu item. Only non-null fields are applied.
-     *
+     * <p>
      * Special case — discount removal:
      *   Setting request.removeDiscount()=true clears discountedPrice,
      *   because a null discountedPrice in the request is ambiguous
      *   ("no change" vs "remove the discount").
      */
-    @CacheEvict(value = "menus", key = "#restaurantId")
     @Transactional
     public MenuItemResponse updateItem(
             Long itemId,
@@ -265,6 +265,7 @@ public class MenuService {
         }
 
         MenuItem updated = itemRepository.save(item);
+        menuCacheService.evict(restaurantId);
         return menuMapper.toItemResponse(updated);
     }
 
@@ -274,20 +275,19 @@ public class MenuService {
      * Flips the isAvailable flag (owner only).
      * Quick toggle for "temporarily out of stock" situations.
      */
-    @CacheEvict(value = "menus", key = "#restaurantId")
     @Transactional
     public MenuItemResponse toggleItemAvailability(Long itemId, Long restaurantId, Long ownerId) {
         getRestaurantOwnedBy(restaurantId, ownerId);
         MenuItem item = getItemBelongingToRestaurant(itemId, restaurantId);
         item.setIsAvailable(!item.getIsAvailable());
         MenuItem updated = itemRepository.save(item);
+        menuCacheService.evict(restaurantId);
         log.info("MenuItem id={} isAvailable toggled to {}", itemId, updated.getIsAvailable());
         return menuMapper.toItemResponse(updated);
     }
 
     // ── Delete Item (soft) ────────────────────────────────────────────────────
 
-    @CacheEvict(value = "menus", key = "#restaurantId")
     @Transactional
     public void deleteItem(Long itemId, Long restaurantId, Long ownerId) {
         getRestaurantOwnedBy(restaurantId, ownerId);
@@ -295,6 +295,7 @@ public class MenuService {
         item.setIsActive(false);
         item.setIsAvailable(false);
         itemRepository.save(item);
+        menuCacheService.evict(restaurantId);
         log.info("MenuItem soft-deleted: id={}, restaurantId={}", itemId, restaurantId);
     }
 
@@ -304,7 +305,7 @@ public class MenuService {
 
     /**
      * Returns the full structured menu for a restaurant — cached in Redis.
-     *
+     * <p>
      * Each category contains only active + available items.
      * Categories with zero visible items are still included
      * (owner may want empty sections for structure).
@@ -312,17 +313,25 @@ public class MenuService {
      * @param restaurantId the restaurant
      * @return ordered list of categories, each with their nested items
      */
-    @Cacheable(value = "menus", key = "#restaurantId")
     @Transactional(readOnly = true)
     public List<MenuCategoryWithItemsResponse> getFullMenu(Long restaurantId) {
         if (!restaurantRepository.existsById(restaurantId)) {
             throw new ResourceNotFoundException("Restaurant", "id", restaurantId);
         }
+        // Stampede-protected: only one thread loads from DB on cache miss;
+        // all others wait briefly and re-read from cache.
+        return menuCacheService.getOrLoad(restaurantId, () -> loadMenuFromDb(restaurantId));
+    }
 
+    /**
+     * Raw DB load — called only by MenuCacheService when the cache is cold.
+     * Extracted to a named method so it's easy to test in isolation.
+     */
+    @Transactional(readOnly = true)
+    public List<MenuCategoryWithItemsResponse> loadMenuFromDb(Long restaurantId) {
         List<MenuCategory> categories =
                 categoryRepository.findByRestaurantIdAndIsActiveTrueOrderByDisplayOrderAsc(restaurantId);
 
-        // Load items per category — avoids @OneToMany lazy loading issues
         return categories.stream()
                 .map(cat -> {
                     List<MenuItem> items =
