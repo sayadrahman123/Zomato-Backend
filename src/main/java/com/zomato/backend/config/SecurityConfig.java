@@ -57,7 +57,9 @@ public class SecurityConfig {
             // Public browse endpoints (no login required to see restaurants/menus)
             "/api/restaurants",
             "/api/restaurants/**",
-            "/api/restaurants/*/menu"
+            "/api/restaurants/*/menu",
+            // Public review listing (read-only, no auth needed)
+            "/api/reviews/restaurant/**"
     };
 
     // ── Security Filter Chain ─────────────────────────────────────────────────
@@ -114,11 +116,12 @@ public class SecurityConfig {
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
+
         return new BCryptPasswordEncoder(12);
     }
 
     /**
-     * DaoAuthenticationProvider — connects Spring Security's authentication
+     * DaoAuthenticationProvider — connects a Spring Security's authentication
      * mechanism to our UserDetailsService and PasswordEncoder.
      */
     @Bean
