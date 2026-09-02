@@ -15,8 +15,6 @@ import com.zomato.backend.repository.RestaurantRepository;
 import com.zomato.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,18 +25,21 @@ import org.springframework.util.StringUtils;
 
 /**
  * Business logic for the Restaurant module.
- *
- * Caching annotations (@Cacheable, @CacheEvict) are added in Step 2.6.
+ * <p>
+ * Caching is handled by {@link RestaurantCacheService} (stampede + penetration
+ * + avalanche + safe invalidation). Only {@link #getRestaurantById(Long)} is
+ * cached — paginated list/search results are not cached because the key space
+ * is unbounded and data freshness matters more than read performance there.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class RestaurantService {
 
-    private final RestaurantRepository restaurantRepository;
-    private final UserRepository       userRepository;
-    private final RestaurantMapper     restaurantMapper;
-
+    private final RestaurantRepository   restaurantRepository;
+    private final UserRepository         userRepository;
+    private final RestaurantMapper       restaurantMapper;
+    private final RestaurantCacheService restaurantCacheService;
     // ── Create ────────────────────────────────────────────────────────────────
 
     /**
@@ -80,24 +81,26 @@ public class RestaurantService {
     /**
      * Fetches a single restaurant by ID.
      * Visible to everyone (customers, owner, admin).
-     *
-     * Cached in Redis under key "restaurants::{id}" for 10 minutes.
+     * <p>
+     * Cached in Redis under the key "restaurants::{id}" for 10 minutes.
      * Cache is evicted automatically on update, toggle, or delete.
      *
      * @param id the restaurant ID
      * @return full RestaurantResponse
      * @throws ResourceNotFoundException if not found
      */
-    @Cacheable(value = "restaurants", key = "#id")
     @Transactional(readOnly = true)
     public RestaurantResponse getRestaurantById(Long id) {
-        Restaurant restaurant = findRestaurantById(id);
-        return restaurantMapper.toRestaurantResponse(restaurant);
+        // All 4 cache protections active: stampede, penetration, avalanche, safe-release
+        return restaurantCacheService.getOrLoad(
+                id,
+                () -> restaurantRepository.findById(id).map(restaurantMapper::toRestaurantResponse)
+        );
     }
 
     /**
      * Paginated list of active restaurants, optionally filtered by city.
-     *
+     * <p>
      * Sorted by avgRating DESC by default (highest-rated first).
      *
      * @param city   city name filter (null = all cities)
@@ -181,7 +184,7 @@ public class RestaurantService {
     /**
      * Updates a restaurant's details.
      * Only the owner of this specific restaurant can call this.
-     *
+     * <p>
      * Applies only non-null fields (partial update pattern).
      *
      * @param id      restaurant ID to update
@@ -191,7 +194,6 @@ public class RestaurantService {
      * @throws BusinessException         if the caller does not own this restaurant
      * @throws ResourceNotFoundException if restaurant not found
      */
-    @CacheEvict(value = "restaurants", key = "#id")
     @Transactional
     public RestaurantResponse updateRestaurant(
             Long id, UpdateRestaurantRequest request, Long ownerId
@@ -219,6 +221,7 @@ public class RestaurantService {
         }
 
         Restaurant updated = restaurantRepository.save(restaurant);
+        restaurantCacheService.evict(id);
         log.info("Restaurant updated: id={}, ownerId={}", id, ownerId);
         return restaurantMapper.toRestaurantResponse(updated);
     }
@@ -234,7 +237,6 @@ public class RestaurantService {
      * @return updated RestaurantResponse
      * @throws BusinessException if the restaurant is not yet approved
      */
-    @CacheEvict(value = "restaurants", key = "#id")
     @Transactional
     public RestaurantResponse toggleOpen(Long id, Long ownerId) {
         Restaurant restaurant = getRestaurantOwnedBy(id, ownerId);
@@ -247,7 +249,7 @@ public class RestaurantService {
 
         restaurant.setIsOpen(!restaurant.getIsOpen());
         Restaurant updated = restaurantRepository.save(restaurant);
-
+        restaurantCacheService.evict(id);
         log.info("Restaurant id={} isOpen toggled to {}", id, updated.getIsOpen());
         return restaurantMapper.toRestaurantResponse(updated);
     }
@@ -256,7 +258,7 @@ public class RestaurantService {
 
     /**
      * Soft-deletes a restaurant by setting isActive=false (owner only).
-     *
+     * <p>
      * Why soft-delete instead of hard-delete?
      * Orders, reviews, and other records reference this restaurant.
      * Hard-deleting would violate FK constraints or cascade-delete
@@ -265,13 +267,13 @@ public class RestaurantService {
      * @param id      restaurant ID
      * @param ownerId JWT-extracted owner ID
      */
-    @CacheEvict(value = "restaurants", key = "#id")
     @Transactional
     public void deleteRestaurant(Long id, Long ownerId) {
         Restaurant restaurant = getRestaurantOwnedBy(id, ownerId);
         restaurant.setIsActive(false);
         restaurant.setIsOpen(false);
         restaurantRepository.save(restaurant);
+        restaurantCacheService.evict(id);
         log.info("Restaurant soft-deleted: id={}, ownerId={}", id, ownerId);
     }
 
@@ -310,12 +312,12 @@ public class RestaurantService {
      * @param id restaurant ID to approve
      * @return updated RestaurantResponse
      */
-    @CacheEvict(value = "restaurants", key = "#id")
     @Transactional
     public RestaurantResponse approveRestaurant(Long id) {
         Restaurant restaurant = findRestaurantById(id);
         restaurant.setIsActive(true);
         Restaurant saved = restaurantRepository.save(restaurant);
+        restaurantCacheService.evict(id);
         log.info("Restaurant approved by admin: id={}", id);
         return restaurantMapper.toRestaurantResponse(saved);
     }
@@ -333,6 +335,11 @@ public class RestaurantService {
                 ? restaurantRepository.findByIsActive(isActive, pageable)
                 : restaurantRepository.findAll(pageable);
         return results.map(restaurantMapper::toRestaurantResponse);
+    }
+
+
+    private String restaurantKey(Long restaurantId) {
+        return "restaurant:" + restaurantId;
     }
 }
 
