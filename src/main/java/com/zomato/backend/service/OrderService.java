@@ -1,5 +1,6 @@
 package com.zomato.backend.service;
 
+import com.zomato.backend.audit.AuditAction;
 import com.zomato.backend.dto.request.PlaceOrderRequest;
 import com.zomato.backend.dto.request.UpdateOrderStatusRequest;
 import com.zomato.backend.dto.response.OrderResponse;
@@ -216,6 +217,7 @@ public class OrderService {
      * @param request   { status: NEW_STATUS }
      * @param ownerId   JWT-extracted owner ID
      */
+    @AuditAction(action = "ORDER_STATUS_UPDATED", resourceType = "ORDER")
     @Transactional
     public OrderResponse updateOrderStatus(
             Long orderId, UpdateOrderStatusRequest request, Long ownerId
@@ -250,6 +252,7 @@ public class OrderService {
      * Customer cancels their own order.
      * Only allowed while the order is still PENDING or CONFIRMED.
      */
+    @AuditAction(action = "ORDER_CANCELLED", resourceType = "ORDER")
     @Transactional
     public OrderResponse cancelOrder(Long orderId, Long customerId) {
         Order order = orderRepository.findByIdAndCustomerId(orderId, customerId)

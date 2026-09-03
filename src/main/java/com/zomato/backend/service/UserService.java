@@ -1,5 +1,6 @@
 package com.zomato.backend.service;
 
+import com.zomato.backend.audit.AuditAction;
 import com.zomato.backend.dto.request.ChangePasswordRequest;
 import com.zomato.backend.dto.request.UpdateProfileRequest;
 import com.zomato.backend.dto.response.UserResponse;
@@ -111,6 +112,7 @@ public class UserService {
      * @param request contains the currentPassword, newPassword, confirmPassword
      * @throws BusinessException if any validation fails
      */
+    @AuditAction(action = "PASSWORD_CHANGED", resourceType = "USER")
     @Transactional
     public void changePassword(Long userId, ChangePasswordRequest request) {
         User user = findUserById(userId);

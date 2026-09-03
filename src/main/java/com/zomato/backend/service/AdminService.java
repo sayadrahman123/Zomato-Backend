@@ -1,5 +1,6 @@
 package com.zomato.backend.service;
 
+import com.zomato.backend.audit.AuditAction;
 import com.zomato.backend.dto.response.UserResponse;
 import com.zomato.backend.entity.DeliveryPartner;
 import com.zomato.backend.entity.Restaurant;
@@ -63,6 +64,7 @@ public class AdminService {
      * Banned users cannot authenticate (checked in UserDetailsServiceImpl).
      * Admins cannot ban other admins.
      */
+    @AuditAction(action = "USER_BANNED", resourceType = "USER")
     @Transactional
     public UserResponse banUser(Long userId) {
         User user = userRepository.findById(userId)
@@ -83,6 +85,7 @@ public class AdminService {
     }
 
     /** Restores a previously banned user's account. */
+    @AuditAction(action = "USER_UNBANNED", resourceType = "USER")
     @Transactional
     public UserResponse unbanUser(Long userId) {
         User user = userRepository.findById(userId)
@@ -103,6 +106,7 @@ public class AdminService {
      * Changes a user's platform role.
      * Prevents changing an ADMIN's own role.
      */
+    @AuditAction(action = "USER_ROLE_CHANGED", resourceType = "USER")
     @Transactional
     public UserResponse changeUserRole(Long userId, UserRole newRole) {
         User user = userRepository.findById(userId)
@@ -137,6 +141,7 @@ public class AdminService {
      * Approves a restaurant — sets isActive=true.
      * The restaurant becomes visible to customers in search.
      */
+    @AuditAction(action = "RESTAURANT_APPROVED", resourceType = "RESTAURANT")
     @Transactional
     public Restaurant approveRestaurant(Long restaurantId) {
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
@@ -156,6 +161,7 @@ public class AdminService {
      * Rejects / suspends a restaurant — sets isActive=false.
      * Used for new restaurant rejection or post-approval suspension.
      */
+    @AuditAction(action = "RESTAURANT_REJECTED", resourceType = "RESTAURANT")
     @Transactional
     public Restaurant rejectRestaurant(Long restaurantId) {
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
@@ -183,6 +189,7 @@ public class AdminService {
      * Verifies a delivery partner — sets isVerified=true.
      * The partner can now go online and receive delivery assignments.
      */
+    @AuditAction(action = "PARTNER_VERIFIED", resourceType = "PARTNER")
     @Transactional
     public DeliveryPartner verifyPartner(Long partnerId) {
         DeliveryPartner partner = partnerRepository.findById(partnerId)
@@ -202,6 +209,7 @@ public class AdminService {
      * Suspends a delivery partner — sets isActive=false.
      * Suspended partners cannot go online or accept deliveries.
      */
+    @AuditAction(action = "PARTNER_SUSPENDED", resourceType = "PARTNER")
     @Transactional
     public DeliveryPartner suspendPartner(Long partnerId) {
         DeliveryPartner partner = partnerRepository.findById(partnerId)
@@ -219,6 +227,7 @@ public class AdminService {
     }
 
     /** Reinstates a suspended delivery partner. */
+    @AuditAction(action = "PARTNER_REINSTATED", resourceType = "PARTNER")
     @Transactional
     public DeliveryPartner reinstatePartner(Long partnerId) {
         DeliveryPartner partner = partnerRepository.findById(partnerId)
