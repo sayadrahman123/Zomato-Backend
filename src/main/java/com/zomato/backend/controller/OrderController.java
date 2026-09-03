@@ -5,6 +5,7 @@ import com.zomato.backend.dto.request.UpdateOrderStatusRequest;
 import com.zomato.backend.dto.response.ApiResponse;
 import com.zomato.backend.dto.response.OrderResponse;
 import com.zomato.backend.dto.response.OrderSummaryResponse;
+import com.zomato.backend.dto.response.PagedResponse;
 import com.zomato.backend.entity.enums.OrderStatus;
 import com.zomato.backend.service.OrderService;
 import com.zomato.backend.util.AuthUtils;
@@ -68,14 +69,14 @@ public class OrderController {
     )
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<OrderSummaryResponse>>> getMyOrders(
+    public ResponseEntity<ApiResponse<PagedResponse<OrderSummaryResponse>>> getMyOrders(
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "10") int size,
             HttpServletRequest httpRequest
     ) {
         Long customerId = authUtils.getCurrentUserId(httpRequest);
         Page<OrderSummaryResponse> orders = orderService.getMyOrders(customerId, page, size);
-        return ResponseEntity.ok(ApiResponse.success("Orders fetched successfully", orders));
+        return ResponseEntity.ok(ApiResponse.paged("Orders fetched successfully", orders));
     }
 
     @Operation(
@@ -120,7 +121,7 @@ public class OrderController {
     )
     @PreAuthorize("hasRole('RESTAURANT_OWNER')")
     @GetMapping("/restaurant/{restaurantId}")
-    public ResponseEntity<ApiResponse<Page<OrderResponse>>> getRestaurantOrders(
+    public ResponseEntity<ApiResponse<PagedResponse<OrderResponse>>> getRestaurantOrders(
             @PathVariable Long restaurantId,
             @RequestParam(required = false) OrderStatus status,
             @RequestParam(defaultValue = "0")  int page,
@@ -130,7 +131,7 @@ public class OrderController {
         Long ownerId = authUtils.getCurrentUserId(httpRequest);
         Page<OrderResponse> orders =
                 orderService.getRestaurantOrders(restaurantId, status, ownerId, page, size);
-        return ResponseEntity.ok(ApiResponse.success("Restaurant orders fetched", orders));
+        return ResponseEntity.ok(ApiResponse.paged("Restaurant orders fetched", orders));
     }
 
     @Operation(

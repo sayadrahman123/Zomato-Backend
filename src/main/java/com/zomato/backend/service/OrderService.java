@@ -12,10 +12,10 @@ import com.zomato.backend.exception.ResourceNotFoundException;
 import com.zomato.backend.mapper.OrderMapper;
 import com.zomato.backend.model.CartItem;
 import com.zomato.backend.repository.*;
+import com.zomato.backend.util.PaginationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -171,8 +171,7 @@ public class OrderService {
      */
     @Transactional(readOnly = true)
     public Page<OrderSummaryResponse> getMyOrders(Long customerId, int page, int size) {
-        size = Math.min(size, 20);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationUtils.createPageable(page, size, 20, Sort.by("createdAt").descending());
         return orderRepository.findByCustomerIdOrderByCreatedAtDesc(customerId, pageable)
                 .map(orderMapper::toOrderSummaryResponse);
     }
@@ -188,8 +187,7 @@ public class OrderService {
             Long restaurantId, OrderStatus status, Long ownerId, int page, int size
     ) {
         verifyRestaurantOwnership(restaurantId, ownerId);
-        size = Math.min(size, 20);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationUtils.createPageable(page, size, 20, Sort.by("createdAt").descending());
 
         Page<Order> orders = (status != null)
                 ? orderRepository.findByRestaurantIdAndStatusOrderByCreatedAtDesc(

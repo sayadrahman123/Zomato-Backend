@@ -2,6 +2,7 @@ package com.zomato.backend.controller;
 
 import com.zomato.backend.dto.request.ChangeRoleRequest;
 import com.zomato.backend.dto.response.ApiResponse;
+import com.zomato.backend.dto.response.PagedResponse;
 import com.zomato.backend.dto.response.UserResponse;
 import com.zomato.backend.entity.DeliveryPartner;
 import com.zomato.backend.entity.Restaurant;
@@ -43,11 +44,11 @@ public class AdminController {
 
     @Operation(summary = "List all users", description = "Paginated list of all platform users, newest first.")
     @GetMapping("/users")
-    public ResponseEntity<ApiResponse<Page<UserResponse>>> getAllUsers(
+    public ResponseEntity<ApiResponse<PagedResponse<UserResponse>>> getAllUsers(
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Users fetched", adminService.getAllUsers(page, size)));
+        return ResponseEntity.ok(ApiResponse.paged("Users fetched", adminService.getAllUsers(page, size)));
     }
 
     @Operation(summary = "Get user by ID")
@@ -94,11 +95,11 @@ public class AdminController {
         description = "Restaurants with isActive=false awaiting admin approval."
     )
     @GetMapping("/restaurants/pending")
-    public ResponseEntity<ApiResponse<Page<Restaurant>>> getPendingRestaurants(
+    public ResponseEntity<ApiResponse<PagedResponse<Restaurant>>> getPendingRestaurants(
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ResponseEntity.ok(ApiResponse.success(
+        return ResponseEntity.ok(ApiResponse.paged(
                 "Pending restaurants fetched", adminService.getPendingRestaurants(page, size)));
     }
 
@@ -135,11 +136,11 @@ public class AdminController {
         description = "Partners with isVerified=false awaiting document verification."
     )
     @GetMapping("/partners/pending")
-    public ResponseEntity<ApiResponse<Page<DeliveryPartner>>> getPendingPartners(
+    public ResponseEntity<ApiResponse<PagedResponse<DeliveryPartner>>> getPendingPartners(
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ResponseEntity.ok(ApiResponse.success(
+        return ResponseEntity.ok(ApiResponse.paged(
                 "Pending partners fetched", adminService.getPendingPartners(page, size)));
     }
 

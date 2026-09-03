@@ -3,6 +3,7 @@ package com.zomato.backend.controller;
 import com.zomato.backend.dto.request.RegisterPartnerRequest;
 import com.zomato.backend.dto.request.UpdateLocationRequest;
 import com.zomato.backend.dto.response.ApiResponse;
+import com.zomato.backend.dto.response.PagedResponse;
 import com.zomato.backend.entity.Delivery;
 import com.zomato.backend.entity.DeliveryPartner;
 import com.zomato.backend.model.PartnerLocation;
@@ -185,14 +186,14 @@ public class DeliveryController {
     )
     @PreAuthorize("hasRole('DELIVERY_PARTNER')")
     @GetMapping("/my-deliveries")
-    public ResponseEntity<ApiResponse<Page<Delivery>>> getMyDeliveries(
+    public ResponseEntity<ApiResponse<PagedResponse<Delivery>>> getMyDeliveries(
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "10") int size,
             HttpServletRequest httpRequest
     ) {
         Long partnerId = authUtils.getCurrentUserId(httpRequest);
         Page<Delivery> deliveries = deliveryService.getMyDeliveries(partnerId, page, size);
-        return ResponseEntity.ok(ApiResponse.success("Delivery history fetched", deliveries));
+        return ResponseEntity.ok(ApiResponse.paged("Delivery history fetched", deliveries));
     }
 
     // ══════════════════════════════════════════════════════════════════════════

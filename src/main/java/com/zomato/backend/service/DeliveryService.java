@@ -12,10 +12,10 @@ import com.zomato.backend.exception.BusinessException;
 import com.zomato.backend.exception.ResourceNotFoundException;
 import com.zomato.backend.model.PartnerLocation;
 import com.zomato.backend.repository.*;
+import com.zomato.backend.util.PaginationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -27,14 +27,14 @@ import java.util.Optional;
 
 /**
  * Business logic for the Delivery Partner module.
- *
+ * <p>
  * Responsibilities:
  *  - Partner registration and profile management
  *  - Online / offline toggling (synced with Redis GEO)
  *  - Real-time location updates
  *  - Order assignment (auto nearest-partner or manual admin)
  *  - Delivery status progression (PICKED_UP → DELIVERED)
- *
+ * <p>
  * Location data lives in Redis (LocationTrackingService).
  * Assignment history and status live in MySQL (DeliveryRepository).
  */
@@ -166,7 +166,7 @@ public class DeliveryService {
 
     /**
      * Automatically assigns the nearest verified + available partner to an order.
-     *
+     * <p>
      * Flow:
      *  1. Load order and check it's in CONFIRMED status (restaurant accepted)
      *  2. Ensure no delivery already exists for this order
@@ -343,8 +343,7 @@ public class DeliveryService {
      */
     @Transactional(readOnly = true)
     public Page<Delivery> getMyDeliveries(Long partnerId, int page, int size) {
-        size = Math.min(size, 20);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationUtils.createPageable(page, size, 20, Sort.by("createdAt").descending());
         return deliveryRepository.findByPartnerIdOrderByCreatedAtDesc(partnerId, pageable);
     }
 

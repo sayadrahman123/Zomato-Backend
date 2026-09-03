@@ -11,10 +11,10 @@ import com.zomato.backend.mapper.UserMapper;
 import com.zomato.backend.repository.DeliveryPartnerRepository;
 import com.zomato.backend.repository.RestaurantRepository;
 import com.zomato.backend.repository.UserRepository;
+import com.zomato.backend.util.PaginationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -46,8 +46,7 @@ public class AdminService {
     /** Paginated list of all platform users, newest first. */
     @Transactional(readOnly = true)
     public Page<UserResponse> getAllUsers(int page, int size) {
-        size = Math.min(size, 50);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationUtils.createPageable(page, size, 50, Sort.by("createdAt").descending());
         return userRepository.findAll(pageable).map(userMapper::toUserResponse);
     }
 
@@ -130,8 +129,7 @@ public class AdminService {
     /** Restaurants awaiting admin approval (isActive=false), newest first. */
     @Transactional(readOnly = true)
     public Page<Restaurant> getPendingRestaurants(int page, int size) {
-        size = Math.min(size, 20);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationUtils.createPageable(page, size, 20, Sort.by("createdAt").descending());
         return restaurantRepository.findByIsActive(false, pageable);
     }
 
@@ -177,8 +175,7 @@ public class AdminService {
     /** Delivery partners awaiting document verification (isVerified=false), newest first. */
     @Transactional(readOnly = true)
     public Page<DeliveryPartner> getPendingPartners(int page, int size) {
-        size = Math.min(size, 20);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationUtils.createPageable(page, size, 20, Sort.by("createdAt").descending());
         return partnerRepository.findByIsVerifiedFalseAndIsActiveTrue(pageable);
     }
 

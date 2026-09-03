@@ -3,6 +3,7 @@ package com.zomato.backend.controller;
 import com.zomato.backend.dto.request.CreateRestaurantRequest;
 import com.zomato.backend.dto.request.UpdateRestaurantRequest;
 import com.zomato.backend.dto.response.ApiResponse;
+import com.zomato.backend.dto.response.PagedResponse;
 import com.zomato.backend.dto.response.RestaurantResponse;
 import com.zomato.backend.dto.response.RestaurantSummaryResponse;
 import com.zomato.backend.entity.enums.CuisineType;
@@ -24,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
  * Handles all restaurant operations.
  * <p>
  * Access rules:
- *  - GET  endpoints → public (no token required for browse/search)
+ *  - GET endpoints → public (no token required for browse/search)
  *  - POST / PUT / DELETE / PATCH → RESTAURANT_OWNER only
  * <p>
  * Base path: /api/restaurants
@@ -82,7 +83,7 @@ public class RestaurantController {
                       "Sorted by rating (highest first). Max 20 per page."
     )
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<RestaurantSummaryResponse>>> getRestaurants(
+    public ResponseEntity<ApiResponse<PagedResponse<RestaurantSummaryResponse>>> getRestaurants(
             @RequestParam(required = false) String city,
             @RequestParam(required = false) CuisineType cuisineType,
             @RequestParam(defaultValue = "0")  int page,
@@ -97,7 +98,7 @@ public class RestaurantController {
             results = restaurantService.getRestaurants(city, page, size, onlyOpen);
         }
 
-        return ResponseEntity.ok(ApiResponse.success("Restaurants fetched successfully", results));
+        return ResponseEntity.ok(ApiResponse.paged("Restaurants fetched successfully", results));
     }
 
     // ── GET /api/restaurants/search ───────────────────────────────────────────
@@ -109,7 +110,7 @@ public class RestaurantController {
                       "Optionally filter by city. Results sorted by rating."
     )
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<Page<RestaurantSummaryResponse>>> searchRestaurants(
+    public ResponseEntity<ApiResponse<PagedResponse<RestaurantSummaryResponse>>> searchRestaurants(
             @RequestParam String q,
             @RequestParam(required = false) String city,
             @RequestParam(defaultValue = "0")  int page,
@@ -117,7 +118,7 @@ public class RestaurantController {
     ) {
         Page<RestaurantSummaryResponse> results =
                 restaurantService.searchRestaurants(q, city, page, size);
-        return ResponseEntity.ok(ApiResponse.success("Search results", results));
+        return ResponseEntity.ok(ApiResponse.paged("Search results", results));
     }
 
     // ── GET /api/restaurants/my ───────────────────────────────────────────────
@@ -129,7 +130,7 @@ public class RestaurantController {
     @SecurityRequirement(name = "bearerAuth")
     @PreAuthorize("hasRole('RESTAURANT_OWNER')")
     @GetMapping("/my")
-    public ResponseEntity<ApiResponse<Page<RestaurantResponse>>> getMyRestaurants(
+    public ResponseEntity<ApiResponse<PagedResponse<RestaurantResponse>>> getMyRestaurants(
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "10") int size,
             HttpServletRequest httpRequest
@@ -137,7 +138,7 @@ public class RestaurantController {
         Long ownerId = authUtils.getCurrentUserId(httpRequest);
         Page<RestaurantResponse> results =
                 restaurantService.getMyRestaurants(ownerId, page, size);
-        return ResponseEntity.ok(ApiResponse.success("Your restaurants", results));
+        return ResponseEntity.ok(ApiResponse.paged("Your restaurants", results));
     }
 
     // ── PUT /api/restaurants/{id} ─────────────────────────────────────────────
@@ -210,14 +211,14 @@ public class RestaurantController {
     @SecurityRequirement(name = "bearerAuth")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin")
-    public ResponseEntity<ApiResponse<Page<RestaurantResponse>>> getRestaurantsForAdmin(
+    public ResponseEntity<ApiResponse<PagedResponse<RestaurantResponse>>> getRestaurantsForAdmin(
             @RequestParam(required = false) Boolean isActive,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "20") int size
     ) {
         Page<RestaurantResponse> results =
                 restaurantService.getRestaurantsForAdmin(isActive, page, size);
-        return ResponseEntity.ok(ApiResponse.success("Admin: restaurants fetched", results));
+        return ResponseEntity.ok(ApiResponse.paged("Admin: restaurants fetched", results));
     }
 
     @Operation(

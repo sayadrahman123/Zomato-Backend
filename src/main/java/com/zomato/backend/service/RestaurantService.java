@@ -13,10 +13,10 @@ import com.zomato.backend.exception.ResourceNotFoundException;
 import com.zomato.backend.mapper.RestaurantMapper;
 import com.zomato.backend.repository.RestaurantRepository;
 import com.zomato.backend.repository.UserRepository;
+import com.zomato.backend.util.PaginationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -112,8 +112,7 @@ public class RestaurantService {
     public Page<RestaurantSummaryResponse> getRestaurants(
             String city, int page, int size, boolean onlyOpen
     ) {
-        size = Math.min(size, 20);  // hard cap to prevent abuse
-        Pageable pageable = PageRequest.of(page, size, Sort.by("avgRating").descending());
+        Pageable pageable = PaginationUtils.createPageable(page, size, 20, Sort.by("avgRating").descending());
 
         Page<Restaurant> results;
 
@@ -138,8 +137,7 @@ public class RestaurantService {
     public Page<RestaurantSummaryResponse> getRestaurantsByCuisine(
             String city, CuisineType cuisineType, int page, int size
     ) {
-        size = Math.min(size, 20);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("avgRating").descending());
+        Pageable pageable = PaginationUtils.createPageable(page, size, 20, Sort.by("avgRating").descending());
 
         Page<Restaurant> results = restaurantRepository
                 .findByCityIgnoreCaseAndCuisineTypeAndIsActiveTrue(city, cuisineType, pageable);
@@ -157,8 +155,7 @@ public class RestaurantService {
     public Page<RestaurantSummaryResponse> searchRestaurants(
             String q, String city, int page, int size
     ) {
-        size = Math.min(size, 20);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("avgRating").descending());
+        Pageable pageable = PaginationUtils.createPageable(page, size, 20, Sort.by("avgRating").descending());
 
         Page<Restaurant> results = StringUtils.hasText(city)
                 ? restaurantRepository.searchByCityAndKeyword(city, q, pageable)
@@ -172,8 +169,7 @@ public class RestaurantService {
      */
     @Transactional(readOnly = true)
     public Page<RestaurantResponse> getMyRestaurants(Long ownerId, int page, int size) {
-        size = Math.min(size, 20);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationUtils.createPageable(page, size, 20, Sort.by("createdAt").descending());
 
         return restaurantRepository.findByOwnerId(ownerId, pageable)
                 .map(restaurantMapper::toRestaurantResponse);
@@ -329,8 +325,7 @@ public class RestaurantService {
      */
     @Transactional(readOnly = true)
     public Page<RestaurantResponse> getRestaurantsForAdmin(Boolean isActive, int page, int size) {
-        size = Math.min(size, 50);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationUtils.createPageable(page, size, 50, Sort.by("createdAt").descending());
         Page<Restaurant> results = (isActive != null)
                 ? restaurantRepository.findByIsActive(isActive, pageable)
                 : restaurantRepository.findAll(pageable);

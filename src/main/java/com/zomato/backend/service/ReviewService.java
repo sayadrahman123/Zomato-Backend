@@ -15,10 +15,10 @@ import com.zomato.backend.repository.OrderRepository;
 import com.zomato.backend.repository.RestaurantRepository;
 import com.zomato.backend.repository.ReviewRepository;
 import com.zomato.backend.repository.UserRepository;
+import com.zomato.backend.util.PaginationUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -189,8 +189,7 @@ public class ReviewService {
      */
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getRestaurantReviews(Long restaurantId, int page, int size) {
-        size = Math.min(size, 20);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationUtils.createPageable(page, size, 20, Sort.by("createdAt").descending());
         return reviewRepository
                 .findByRestaurantIdAndIsActiveTrueOrderByCreatedAtDesc(restaurantId, pageable)
                 .map(reviewMapper::toReviewResponse);
@@ -201,8 +200,7 @@ public class ReviewService {
      */
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getMyReviews(Long customerId, int page, int size) {
-        size = Math.min(size, 20);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationUtils.createPageable(page, size, 20, Sort.by("createdAt").descending());
         return reviewRepository
                 .findByCustomerIdAndIsActiveTrueOrderByCreatedAtDesc(customerId, pageable)
                 .map(reviewMapper::toReviewResponse);
@@ -213,8 +211,7 @@ public class ReviewService {
      */
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getAllRestaurantReviews(Long restaurantId, int page, int size) {
-        size = Math.min(size, 20);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationUtils.createPageable(page, size, 20, Sort.by("createdAt").descending());
         return reviewRepository
                 .findByRestaurantIdOrderByCreatedAtDesc(restaurantId, pageable)
                 .map(reviewMapper::toReviewResponse);

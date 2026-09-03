@@ -57,4 +57,12 @@ public class ApiResponse<T> {
                 .message(message)
                 .build();
     }
+
+    public static <T> ApiResponse<PagedResponse<T>> paged(String message, org.springframework.data.domain.Page<T> page) {
+        return ApiResponse.<PagedResponse<T>>builder()
+                .success(true)
+                .message(message)
+                .data(PagedResponse.from(page))
+                .build();
+    }
 }

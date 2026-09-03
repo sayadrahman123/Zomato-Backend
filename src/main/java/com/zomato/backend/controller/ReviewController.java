@@ -3,6 +3,7 @@ package com.zomato.backend.controller;
 import com.zomato.backend.dto.request.SubmitReviewRequest;
 import com.zomato.backend.dto.request.UpdateReviewRequest;
 import com.zomato.backend.dto.response.ApiResponse;
+import com.zomato.backend.dto.response.PagedResponse;
 import com.zomato.backend.dto.response.ReviewResponse;
 import com.zomato.backend.service.ReviewService;
 import com.zomato.backend.util.AuthUtils;
@@ -47,13 +48,13 @@ public class ReviewController {
         description = "Returns paginated active reviews for a restaurant. No authentication required."
     )
     @GetMapping("/restaurant/{restaurantId}")
-    public ResponseEntity<ApiResponse<Page<ReviewResponse>>> getRestaurantReviews(
+    public ResponseEntity<ApiResponse<PagedResponse<ReviewResponse>>> getRestaurantReviews(
             @PathVariable Long restaurantId,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         Page<ReviewResponse> reviews = reviewService.getRestaurantReviews(restaurantId, page, size);
-        return ResponseEntity.ok(ApiResponse.success("Reviews fetched successfully", reviews));
+        return ResponseEntity.ok(ApiResponse.paged("Reviews fetched successfully", reviews));
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -118,14 +119,14 @@ public class ReviewController {
     )
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/my")
-    public ResponseEntity<ApiResponse<Page<ReviewResponse>>> getMyReviews(
+    public ResponseEntity<ApiResponse<PagedResponse<ReviewResponse>>> getMyReviews(
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "10") int size,
             HttpServletRequest httpRequest
     ) {
         Long customerId = authUtils.getCurrentUserId(httpRequest);
         Page<ReviewResponse> reviews = reviewService.getMyReviews(customerId, page, size);
-        return ResponseEntity.ok(ApiResponse.success("Your reviews fetched successfully", reviews));
+        return ResponseEntity.ok(ApiResponse.paged("Your reviews fetched successfully", reviews));
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -156,13 +157,13 @@ public class ReviewController {
     )
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/restaurant/{restaurantId}")
-    public ResponseEntity<ApiResponse<Page<ReviewResponse>>> getAllRestaurantReviews(
+    public ResponseEntity<ApiResponse<PagedResponse<ReviewResponse>>> getAllRestaurantReviews(
             @PathVariable Long restaurantId,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         Page<ReviewResponse> reviews =
                 reviewService.getAllRestaurantReviews(restaurantId, page, size);
-        return ResponseEntity.ok(ApiResponse.success("All reviews fetched", reviews));
+        return ResponseEntity.ok(ApiResponse.paged("All reviews fetched", reviews));
     }
 }
