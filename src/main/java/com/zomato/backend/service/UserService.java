@@ -27,9 +27,10 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class UserService {
 
-    private final UserRepository  userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final UserMapper      userMapper;
+    private final UserRepository         userRepository;
+    private final PasswordEncoder        passwordEncoder;
+    private final UserMapper             userMapper;
+    private final UserProfileCacheService profileCacheService;
 
     // ── Get Profile ───────────────────────────────────────────────────────────
 
@@ -42,8 +43,10 @@ public class UserService {
      */
     @Transactional(readOnly = true)
     public UserResponse getProfile(Long userId) {
-        User user = findUserById(userId);
-        return userMapper.toUserResponse(user);
+        return profileCacheService.getOrLoad(
+                userId,
+                () -> userRepository.findById(userId).map(userMapper::toUserResponse)
+        );
     }
 
     // ── Update Profile ────────────────────────────────────────────────────────
@@ -87,6 +90,7 @@ public class UserService {
 
         if (updated) {
             user = userRepository.save(user);
+            profileCacheService.evict(userId);
             log.info("Profile updated for userId={}", userId);
         }
 
@@ -128,7 +132,7 @@ public class UserService {
 
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
-
+        profileCacheService.evict(userId);   // cached profile had stale data (no pw, but safe housekeeping)
         log.info("Password changed successfully for userId={}", userId);
     }
 

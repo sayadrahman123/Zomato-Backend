@@ -37,6 +37,7 @@ public class AdminService {
     private final RestaurantRepository      restaurantRepository;
     private final DeliveryPartnerRepository partnerRepository;
     private final UserMapper                userMapper;
+    private final UserProfileCacheService   profileCacheService;
 
     // ══════════════════════════════════════════════════════════════════════════
     // USER MANAGEMENT
@@ -77,6 +78,7 @@ public class AdminService {
 
         user.setIsActive(false);
         User saved = userRepository.save(user);
+        profileCacheService.evict(userId);
         log.info("User banned by admin: userId={}", userId);
         return userMapper.toUserResponse(saved);
     }
@@ -93,6 +95,7 @@ public class AdminService {
 
         user.setIsActive(true);
         User saved = userRepository.save(user);
+        profileCacheService.evict(userId);
         log.info("User unbanned by admin: userId={}", userId);
         return userMapper.toUserResponse(saved);
     }
@@ -115,6 +118,7 @@ public class AdminService {
 
         user.setRole(newRole);
         User saved = userRepository.save(user);
+        profileCacheService.evict(userId);
         log.info("User role changed: userId={}, newRole={}", userId, newRole);
         return userMapper.toUserResponse(saved);
     }
