@@ -36,6 +36,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final com.zomato.backend.ratelimit.RateLimitFilter rateLimitFilter;
     private final UserDetailsService userDetailsService;
 
     // ── Publicly accessible endpoints ─────────────────────────────────────────
@@ -101,6 +102,9 @@ public class SecurityConfig {
 
             // Wire up our DaoAuthenticationProvider
             .authenticationProvider(authenticationProvider())
+
+            // Add Rate Limit filter before the JWT auth filter
+            .addFilterBefore(rateLimitFilter, JwtAuthFilter.class)
 
             // Add JWT filter before the default username/password filter
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

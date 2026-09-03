@@ -17,9 +17,9 @@ import java.util.function.Supplier;
 
 /**
  * Industry-grade Redis caching for individual restaurant lookups.
- *
+ * <p>
  * Solves all four classic cache problems:
- *
+ * <p>
  * ┌─────────────────────────────────────────────────────────────────────────┐
  * │ 1. CACHE STAMPEDE (Thundering Herd)                                     │
  * │    Problem:  popular restaurant's key expires → 1,000 concurrent misses │
@@ -50,7 +50,7 @@ import java.util.function.Supplier;
  * │             Release uses a Lua script that atomically checks            │
  * │             "is this my token?" before deleting.                        │
  * └─────────────────────────────────────────────────────────────────────────┘
- *
+ * <p>
  * Key naming:
  *   restaurant:{id}        → RestaurantResponse | NULL_SENTINEL (TTL: ~10min)
  *   restaurant:lock:{id}   → UUID token (TTL: 30s)
@@ -135,7 +135,7 @@ public class RestaurantCacheService {
 
     /**
      * Cache-aside read with all four protections active.
-     *
+     * <p>
      * Flow:
      *   1. Cache hit (real data)      → return immediately.
      *   2. Cache hit (NULL_SENTINEL)  → throw ResourceNotFoundException (no DB).
@@ -228,7 +228,7 @@ public class RestaurantCacheService {
     public void evict(Long restaurantId) {
         try {
             Boolean deleted = redisTemplate.delete(cacheKey(restaurantId));
-            if (Boolean.TRUE.equals(deleted)) {
+            if (deleted) {
                 log.info("Restaurant cache evicted: restaurantId={}", restaurantId);
             } else {
                 log.debug("Restaurant cache evict (key not present): restaurantId={}", restaurantId);
@@ -328,7 +328,7 @@ public class RestaurantCacheService {
                     Collections.singletonList(lockKey(restaurantId)),
                     token
             );
-            if (result == null || result != 1L) {
+            if (!Long.valueOf(1L).equals(result)) {
                 log.warn("Lock NOT released (expired or stolen): restaurantId={}, token={}", restaurantId, token);
             }
         } catch (Exception e) {
@@ -367,21 +367,31 @@ public class RestaurantCacheService {
 
     /**
      * Discriminated union representing three possible cache outcomes:
-     *   MISS     → key not present in Redis
+     *   MISS → key not present in Redis
      *   SENTINEL → NULL_SENTINEL stored (restaurant doesn't exist)
-     *   HIT      → real RestaurantResponse found
-     *
+     *   HIT → real RestaurantResponse found
+     * <p>
      * Avoids null-ambiguity between "not in cache" and "cached as null".
      */
     private sealed interface CacheResult
             permits CacheResult.Miss, CacheResult.Sentinel, CacheResult.Hit {
 
-        static CacheResult miss()               { return new Miss();        }
-        static CacheResult sentinel()           { return new Sentinel();    }
-        static CacheResult hit(RestaurantResponse v) { return new Hit(v);  }
+        static CacheResult miss() {
+            return new Miss();
+        }
+        static CacheResult sentinel() {
+            return new Sentinel();
+        }
+        static CacheResult hit(RestaurantResponse v) {
+            return new Hit(v);
+        }
 
-        default boolean isSentinel() { return this instanceof Sentinel; }
-        default boolean hasValue()   { return this instanceof Hit;      }
+        default boolean isSentinel() {
+            return this instanceof Sentinel;
+        }
+        default boolean hasValue()   {
+            return this instanceof Hit;
+        }
         default RestaurantResponse value() {
             return ((Hit) this).response();
         }

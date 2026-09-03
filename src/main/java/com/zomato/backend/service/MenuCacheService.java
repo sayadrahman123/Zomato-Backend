@@ -57,7 +57,7 @@ import java.util.function.Supplier;
  * <p>
  * TTLs:
  *   Cache: CACHE_TTL_MINUTES = 15 minutes
- *   Lock:  LOCK_TTL_SECONDS  = 30 seconds (max lock hold time before auto-expiry)
+ *   Lock: LOCK_TTL_SECONDS = 30 seconds (max lock hold time before auto-expiry)
  * ─────────────────────────────────────────────────────────────────────────────
  */
 @Slf4j
@@ -90,11 +90,11 @@ public class MenuCacheService {
      * Lua script for safe, atomic lock release.
      * <p>
      * Logic (runs atomically inside Redis, no TOCTOU race):
-     *   if GET(KEYS[1]) == ARGV[1] then   ← is this our token?
-     *       DEL(KEYS[1])                  ← yes → release the lock
-     *       return 1                      ← released
+     *   if GET(KEYS[1]) == ARGV[1] then ← is this our token?
+     *       DEL(KEYS[1]) ← yes → release the lock
+     *       return 1 ← released
      *   else
-     *       return 0                      ← not ours (expired or stolen) → skip
+     *       return 0 ← not ours (expired or stolen) → skip
      *   end
      * <p>
      * KEYS[1] = lock key (e.g. "menu:lock:42")
@@ -206,7 +206,7 @@ public class MenuCacheService {
     public void evict(Long restaurantId) {
         try {
             Boolean deleted = redisTemplate.delete(cacheKey(restaurantId));
-            if (Boolean.TRUE.equals(deleted)) {
+            if (deleted) {
                 log.info("Menu cache evicted: restaurantId={}", restaurantId);
             } else {
                 log.debug("Menu cache evict (key not present): restaurantId={}", restaurantId);
@@ -304,7 +304,7 @@ public class MenuCacheService {
                     Collections.singletonList(lockKey(restaurantId)),
                     token
             );
-            if (result != null && result == 1L) {
+            if (Long.valueOf(1L).equals(result)) {
                 log.debug("Menu lock released (Lua): restaurantId={}", restaurantId);
             } else {
                 // Lock had already expired or was taken by another thread.
